@@ -61,19 +61,28 @@ jobs:
       - name: Install Chrome and ChromeDriver
         run: |
           # Install Chrome
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
           sudo apt-get update
           sudo apt-get -y install google-chrome-stable
           
-          # Get Chrome version and install matching ChromeDriver
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
+          # Tampilkan versi Chrome
+          CHROME_VERSION=$(google-chrome --version)
           echo "Chrome version: $CHROME_VERSION"
           
-          # Download ChromeDriver
-          wget -q -O /tmp/chromedriver_linux64.zip "https://edgedl.me.gvt1.com/edgedl/chrome/chromedriver/linux64/$(google-chrome --version | awk '{print $3}')/chromedriver_linux64.zip"
+          # Cara 1: Gunakan chromedriver-py (lebih handal)
+          echo "Menginstall chromedriver-py..."
+          pip install chromedriver-py
+          echo "Lokasi chromedriver:"
+          python -c "import chromedriver_py; print(chromedriver_py.binary_path)"
+          cp $(python -c "import chromedriver_py; print(chromedriver_py.binary_path)") chromedriver
+          chmod +x chromedriver
+          
+          # Verifikasi chromedriver
+          ls -la chromedriver*
+          ./chromedriver --version
+          
+          # Buat symlink ke folder yang diharapkan
           mkdir -p chromedriver-linux64
-          unzip /tmp/chromedriver_linux64.zip -d chromedriver-linux64
+          cp chromedriver chromedriver-linux64/
           chmod +x chromedriver-linux64/chromedriver
       
       - name: Persiapan lingkungan pengujian
