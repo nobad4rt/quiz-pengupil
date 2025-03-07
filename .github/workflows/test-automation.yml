@@ -101,13 +101,11 @@ jobs:
           echo "Status curl: $?"
       
       - name: Debug ChromeDriver
-        if: always()
         run: |
           ls -la chromedriver-linux64/
           chromedriver-linux64/chromedriver --version
       
       - name: Debug environment
-        if: always()
         run: |
           echo "=== Environment Variables ==="
           echo "CI: $CI"
@@ -120,18 +118,6 @@ jobs:
           ls -la
           echo "=== PHP Server Status ==="
           ps aux | grep php
-      
-      - name: Cek service PHP
-        if: always()
-        run: ps aux | grep php
-      
-      - name: Cek file di direktori
-        if: always()
-        run: ls -la
-      
-      - name: Cek akses web server
-        if: always()
-        run: curl -I http://localhost:8000/ || echo "Tidak bisa mengakses web server"
       
       - name: Run tests
         run: |
@@ -162,27 +148,3 @@ jobs:
             test_report_*.html
             ss_login/
             ss_register/ 
-
-name: Simple Test
-
-on:
-  workflow_dispatch:
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Test PHP Server
-        run: |
-          php -S localhost:8000 &
-          sleep 3
-          curl localhost:8000
-          echo "Test selesai" 
-
-- name: Persiapan script
-  run: |
-    ls -la .github/config/
-    chmod +x .github/config/setup-ci.sh  # Pastikan chmod berjalan
-    echo "chmod selesai" 
