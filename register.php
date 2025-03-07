@@ -52,8 +52,8 @@ if( isset($_POST['submit']) ){
     } 
 
     function cek_nama($username,$con){
-        $nama = mysqli_real_escape_string($con, $username);
-        $query = "SELECT * FROM users WHERE username = '$nama'";
+        $name = mysqli_real_escape_string($con, $username);
+        $query = "SELECT * FROM users WHERE username = '$name'";
         if( $result = mysqli_query($con, $query) ) return mysqli_num_rows($result);
     }
 ?>
