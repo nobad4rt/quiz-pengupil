@@ -45,9 +45,7 @@ jobs:
           
           # Start PHP server di background
           php -S localhost:8000 &
-          echo "PHP server running on port 8000"
-          
-          # Tunggu server berjalan
+          echo "PHP server dimulai, PID: $!"
           sleep 3
       
       - name: Set up Python
@@ -94,16 +92,22 @@ jobs:
           find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/localhost\//http:\/\/localhost:8000\//g' {} \;
           find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/127.0.0.1\//http:\/\/localhost:8000\//g' {} \;
       
-      - name: Verifikasi server PHP
+      - name: Verifikasi server PHP (terpisah)
+        if: always()
         run: |
-          curl -v http://localhost:8000/ || echo "Server PHP tidak berjalan!"
+          # Verifikasi server berjalan
+          echo "Memeriksa server PHP..."
+          curl -v http://localhost:8000/ || true
+          echo "Status curl: $?"
       
       - name: Debug ChromeDriver
+        if: always()
         run: |
           ls -la chromedriver-linux64/
           chromedriver-linux64/chromedriver --version
       
       - name: Debug environment
+        if: always()
         run: |
           echo "=== Environment Variables ==="
           echo "CI: $CI"
@@ -116,6 +120,18 @@ jobs:
           ls -la
           echo "=== PHP Server Status ==="
           ps aux | grep php
+      
+      - name: Cek service PHP
+        if: always()
+        run: ps aux | grep php
+      
+      - name: Cek file di direktori
+        if: always()
+        run: ls -la
+      
+      - name: Cek akses web server
+        if: always()
+        run: curl -I http://localhost:8000/ || echo "Tidak bisa mengakses web server"
       
       - name: Run tests
         run: |
@@ -146,3 +162,27 @@ jobs:
             test_report_*.html
             ss_login/
             ss_register/ 
+
+name: Simple Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Test PHP Server
+        run: |
+          php -S localhost:8000 &
+          sleep 3
+          curl localhost:8000
+          echo "Test selesai" 
+
+- name: Persiapan script
+  run: |
+    ls -la .github/config/
+    chmod +x .github/config/setup-ci.sh  # Pastikan chmod berjalan
+    echo "chmod selesai" 
