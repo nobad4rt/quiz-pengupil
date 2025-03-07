@@ -94,12 +94,42 @@ jobs:
           find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/localhost\//http:\/\/localhost:8000\//g' {} \;
           find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/127.0.0.1\//http:\/\/localhost:8000\//g' {} \;
       
+      - name: Verifikasi server PHP
+        run: |
+          curl -v http://localhost:8000/ || echo "Server PHP tidak berjalan!"
+      
+      - name: Debug ChromeDriver
+        run: |
+          ls -la chromedriver-linux64/
+          chromedriver-linux64/chromedriver --version
+      
+      - name: Debug environment
+        run: |
+          echo "=== Environment Variables ==="
+          echo "CI: $CI"
+          echo "BASE_URL: $BASE_URL"
+          echo "=== PHP Info ==="
+          php -v
+          echo "=== Python Info ==="
+          python --version
+          echo "=== Directory Structure ==="
+          ls -la
+          echo "=== PHP Server Status ==="
+          ps aux | grep php
+      
       - name: Run tests
-        run: python run_all_tests.py
+        run: |
+          # Jalankan test dengan output verbose
+          python -u run_all_tests.py || {
+            echo "=== TEST GAGAL! ==="
+            echo "Menampilkan screenshot terakhir..."
+            ls -la ss_login/ ss_register/
+            exit 1
+          }
         env:
-          # Set environment variables jika diperlukan
           BASE_URL: http://localhost:8000
           CI: "true"
+          PYTHONUNBUFFERED: "1"  # Pastikan output Python tidak di-buffer
       
       - name: Generate HTML report
         if: always()  # Selalu jalankan meskipun tes gagal
