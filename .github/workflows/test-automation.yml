@@ -1,0 +1,118 @@
+name: Test Automation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    # Memungkinkan manual trigger dari GitHub UI
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      # Layanan MySQL untuk database
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: quiz_pengupil
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, intl, mysqli, zip
+      
+      - name: Start PHP server
+        run: |
+          # Import database schema
+          if [ -d "db" ] && [ -f "db/quiz_pengupil.sql" ]; then
+            mysql -h 127.0.0.1 -P 3306 -u root -proot quiz_pengupil < db/quiz_pengupil.sql
+          else
+            echo "Database schema tidak ditemukan, menggunakan script setup_test_db.php..."
+            # Jalankan script persiapan database
+            php setup_test_db.php
+          fi
+          
+          # Start PHP server di background
+          php -S localhost:8000 &
+          echo "PHP server running on port 8000"
+          
+          # Tunggu server berjalan
+          sleep 3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Install Chrome and ChromeDriver
+        run: |
+          # Install Chrome
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get -y install google-chrome-stable
+          
+          # Get Chrome version and install matching ChromeDriver
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1)
+          echo "Chrome version: $CHROME_VERSION"
+          
+          # Download ChromeDriver
+          wget -q -O /tmp/chromedriver_linux64.zip "https://edgedl.me.gvt1.com/edgedl/chrome/chromedriver/linux64/$(google-chrome --version | awk '{print $3}')/chromedriver_linux64.zip"
+          mkdir -p chromedriver-linux64
+          unzip /tmp/chromedriver_linux64.zip -d chromedriver-linux64
+          chmod +x chromedriver-linux64/chromedriver
+      
+      - name: Persiapan lingkungan pengujian
+        run: |
+          # Buat script setup-ci.sh executable
+          chmod +x .github/config/setup-ci.sh
+          
+          # Jalankan script persiapan
+          .github/config/setup-ci.sh
+        env:
+          CI: "true"
+      
+      - name: Modifikasi skrip pengujian untuk GitHub Actions
+        run: |
+          # Update BASE_URL untuk mengarah ke server PHP lokal
+          find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/localhost\//http:\/\/localhost:8000\//g' {} \;
+          find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/127.0.0.1\//http:\/\/localhost:8000\//g' {} \;
+      
+      - name: Run tests
+        run: python run_all_tests.py
+        env:
+          # Set environment variables jika diperlukan
+          BASE_URL: http://localhost:8000
+          CI: "true"
+      
+      - name: Generate HTML report
+        if: always()  # Selalu jalankan meskipun tes gagal
+        run: python run_all_tests.py --html
+        env:
+          CI: "true"
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            test_report_*.html
+            ss_login/
+            ss_register/ 

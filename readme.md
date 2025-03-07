@@ -126,6 +126,25 @@ python test_login_module.py
 python test_register_module.py
 ```
 
+## CI/CD Pipeline dengan GitHub Actions
+
+Repository ini telah dikonfigurasi dengan GitHub Actions untuk menjalankan test otomatis setiap kali ada push atau pull request ke branch main/master.
+
+### Fitur CI/CD:
+
+- **Otomatisasi Pengujian**: Test dijalankan otomatis tanpa intervensi manual
+- **Lingkungan Konsisten**: Menggunakan container dengan semua dependensi yang diperlukan
+- **Laporan Hasil**: Menyimpan laporan HTML dan screenshot sebagai artifact
+- **Deteksi Dini Bug**: Menemukan masalah sebelum diintegrasikan ke kode utama
+
+### Menjalankan CI/CD Pipeline:
+
+1. Push ke branch main/master, atau
+2. Buat pull request ke branch main/master, atau
+3. Trigger manual dari tab "Actions" di GitHub
+
+Untuk detail lebih lanjut tentang pipeline CI/CD, lihat [.github/README-CI-CD.md](.github/README-CI-CD.md).
+
 ## Fitur Tambahan
 
 1. **Screenshots Otomatis**: Setiap test mengambil screenshot saat persiapan dan jika terjadi error
