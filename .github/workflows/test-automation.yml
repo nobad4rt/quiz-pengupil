@@ -77,12 +77,50 @@ jobs:
           chmod +x chromedriver-linux64/chromedriver
       
       - name: Persiapan lingkungan pengujian
+        if: always()
         run: |
-          # Buat script setup-ci.sh executable
-          chmod +x .github/config/setup-ci.sh
+          # Periksa apakah folder dan file ada
+          echo "Memeriksa folder .github/config..."
+          if [ -d ".github/config" ]; then
+            echo "Folder .github/config ada"
+          else
+            echo "Folder .github/config tidak ada, membuat folder..."
+            mkdir -p .github/config
+          fi
           
-          # Jalankan script persiapan
-          .github/config/setup-ci.sh
+          # Periksa apakah file setup-ci.sh ada
+          if [ -f ".github/config/setup-ci.sh" ]; then
+            echo "File setup-ci.sh ada"
+            chmod +x .github/config/setup-ci.sh
+            .github/config/setup-ci.sh
+          else
+            echo "File setup-ci.sh tidak ada, membuat langkah persiapan secara inline..."
+            # --- Langkah persiapan inline ---
+            echo "=== Setup Lingkungan CI/CD ==="
+            
+            # Pastikan direktori untuk screenshot ada
+            mkdir -p ss_login
+            mkdir -p ss_register
+            
+            # Periksa dependensi Python
+            echo "=== Memeriksa dependensi Python ==="
+            pip freeze
+            
+            # Periksa Chrome dan ChromeDriver
+            echo "=== Memeriksa versi Chrome ==="
+            google-chrome --version
+            
+            echo "=== Memeriksa versi ChromeDriver ==="
+            if [ -f "chromedriver-linux64/chromedriver" ]; then
+                chromedriver-linux64/chromedriver --version
+            else
+                echo "ChromeDriver tidak ditemukan di chromedriver-linux64/"
+            fi
+            
+            # Memastikan file PHP tersedia
+            echo "=== Memeriksa file PHP ==="
+            ls -la *.php
+          fi
         env:
           CI: "true"
       
@@ -90,7 +128,7 @@ jobs:
         run: |
           # Update BASE_URL untuk mengarah ke server PHP lokal
           find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/localhost\//http:\/\/localhost:8000\//g' {} \;
-          find . -name "test_*.py" -type f -exec sed -i 's/http:\/\/127.0.0.1\//http:\/\/localhost:8000\//g' {} \;
+          find . -name "test_*.py" -exec sed -i 's/http:\/\/127.0.0.1\//http:\/\/localhost:8000\//g' {} \;
       
       - name: Verifikasi server PHP (terpisah)
         if: always()
